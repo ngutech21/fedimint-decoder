@@ -28,6 +28,8 @@ struct DecodedPeer {
 struct DecodedOobToken {
     total_amount: String,
     total_amount_msats: u64,
+    total_amount_sats: String,
+    total_amount_btc: String,
     federation_id_prefix: String,
     note_count: usize,
     tier_count: usize,
@@ -49,7 +51,14 @@ struct DecodedDenomination {
 enum DecodeResult {
     InviteCode(DecodedInviteCode),
     OobToken(DecodedOobToken),
-    Error(String),
+    Error(DecodeError),
+}
+
+#[derive(Clone)]
+struct DecodeError {
+    summary: String,
+    invite_code_error: Option<String>,
+    oob_token_error: Option<String>,
 }
 
 #[component]
@@ -61,9 +70,11 @@ fn App() -> impl IntoView {
         let trimmed = input.get().trim().to_owned();
 
         if trimmed.is_empty() {
-            set_result.set(Some(DecodeResult::Error(
-                "Enter a Fedimint join code or token first.".to_owned(),
-            )));
+            set_result.set(Some(DecodeResult::Error(DecodeError {
+                summary: "Enter a Fedimint invite code or OOB token first.".to_owned(),
+                invite_code_error: None,
+                oob_token_error: None,
+            })));
             return;
         }
 
@@ -78,9 +89,9 @@ fn App() -> impl IntoView {
             <section class="decoder-panel" aria-labelledby="decoder-title">
                 <div class="intro">
                     <p class="eyebrow">"Fedimint Decoder"</p>
-                    <h1 id="decoder-title">"Inspect join codes and tokens"</h1>
+                    <h1 id="decoder-title">"Inspect invite codes and tokens"</h1>
                     <p class="lede">
-                        "Paste a Fedimint join code or OOB token. Decoding will run fully locally in your browser."
+                        "Paste a Fedimint invite code or OOB token. Decoding will run fully locally in your browser."
                     </p>
                 </div>
 
@@ -118,8 +129,8 @@ fn App() -> impl IntoView {
                                         DecodeResult::OobToken(oob_token) => {
                                             view! { <OobTokenResult oob_token=oob_token /> }.into_any()
                                         }
-                                        DecodeResult::Error(message) => {
-                                            view! { <p class="error-message">{message}</p> }.into_any()
+                                        DecodeResult::Error(error) => {
+                                            view! { <DecodeErrorResult error=error /> }.into_any()
                                         }
                                     }
                                 })
@@ -134,12 +145,17 @@ fn App() -> impl IntoView {
 #[component]
 fn InviteCodeResult(invite_code: DecodedInviteCode) -> impl IntoView {
     let peers = invite_code.peers.clone();
+    let raw_note = if invite_code.has_api_secret {
+        "This invite code includes an API secret. Reveal it only when you intend to inspect or copy the full code."
+    } else {
+        "Reveal the canonical invite code string used by Fedimint's parser."
+    };
 
     view! {
         <div class="summary-grid">
             <div class="summary-item">
                 <span class="summary-label">"Type"</span>
-                <strong>"Federation join code"</strong>
+                <strong>"Federation invite code"</strong>
             </div>
             <div class="summary-item">
                 <span class="summary-label">"Federation ID"</span>
@@ -181,10 +197,11 @@ fn InviteCodeResult(invite_code: DecodedInviteCode) -> impl IntoView {
             </div>
         </div>
 
-        <div class="detail-block">
-            <h3>"Normalized code"</h3>
-            <code class="raw-code">{invite_code.normalized_code}</code>
-        </div>
+        <RawDisclosure
+            title="Normalized invite code"
+            note=raw_note
+            value=invite_code.normalized_code
+        />
     }
 }
 
@@ -193,6 +210,21 @@ fn OobTokenResult(oob_token: DecodedOobToken) -> impl IntoView {
     let denominations = oob_token.denominations.clone();
 
     view! {
+        <div class="status-list" aria-label="Offline decoding status">
+            <div class="status-item">
+                <span class="summary-label">"Format"</span>
+                <strong>"Decoded locally"</strong>
+            </div>
+            <div class="status-item">
+                <span class="summary-label">"Spent status"</span>
+                <strong>"Unknown"</strong>
+            </div>
+            <div class="status-item">
+                <span class="summary-label">"Federation acceptance"</span>
+                <strong>"Not checked"</strong>
+            </div>
+        </div>
+
         <div class="summary-grid">
             <div class="summary-item">
                 <span class="summary-label">"Type"</span>
@@ -204,7 +236,15 @@ fn OobTokenResult(oob_token: DecodedOobToken) -> impl IntoView {
             </div>
             <div class="summary-item">
                 <span class="summary-label">"Total msats"</span>
-                <strong>{oob_token.total_amount_msats}</strong>
+                <strong class="mono">{oob_token.total_amount_msats}</strong>
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">"Total sats"</span>
+                <strong class="mono">{oob_token.total_amount_sats.clone()}</strong>
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">"Total BTC"</span>
+                <strong class="mono">{oob_token.total_amount_btc.clone()}</strong>
             </div>
             <div class="summary-item">
                 <span class="summary-label">"Federation ID prefix"</span>
@@ -246,9 +286,69 @@ fn OobTokenResult(oob_token: DecodedOobToken) -> impl IntoView {
 
         <EmbeddedInviteCode invite_code=oob_token.invite_code.clone() />
 
-        <div class="detail-block">
-            <h3>"Normalized token"</h3>
-            <code class="raw-code">{oob_token.normalized_token}</code>
+        <RawDisclosure
+            title="Raw normalized token"
+            note="This token may contain spendable ecash data. Reveal it only when you intentionally need the raw representation."
+            value=oob_token.normalized_token
+        />
+    }
+}
+
+#[component]
+fn RawDisclosure(title: &'static str, note: &'static str, value: String) -> impl IntoView {
+    view! {
+        <details class="raw-disclosure">
+            <summary>{title}</summary>
+            <p>{note}</p>
+            <code class="raw-code">{value}</code>
+        </details>
+    }
+}
+
+#[component]
+fn DecodeErrorResult(error: DecodeError) -> impl IntoView {
+    let summary = error.summary;
+    let invite_code_error = error.invite_code_error.unwrap_or_default();
+    let oob_token_error = error.oob_token_error.unwrap_or_default();
+    let has_invite_code_error = !invite_code_error.is_empty();
+    let has_oob_token_error = !oob_token_error.is_empty();
+    let has_parser_details = has_invite_code_error || has_oob_token_error;
+    let parser_details = if has_parser_details {
+        view! {
+            <div class="error-grid">
+                {if has_invite_code_error {
+                    view! {
+                        <div class="error-detail">
+                            <span class="summary-label">"Invite code parser"</span>
+                            <code>{invite_code_error}</code>
+                        </div>
+                    }
+                    .into_any()
+                } else {
+                    view! {}.into_any()
+                }}
+                {if has_oob_token_error {
+                    view! {
+                        <div class="error-detail">
+                            <span class="summary-label">"OOB token parser"</span>
+                            <code>{oob_token_error}</code>
+                        </div>
+                    }
+                    .into_any()
+                } else {
+                    view! {}.into_any()
+                }}
+            </div>
+        }
+        .into_any()
+    } else {
+        view! {}.into_any()
+    };
+
+    view! {
+        <div class="error-panel" role="alert">
+            <p class="error-message">{summary}</p>
+            {parser_details}
         </div>
     }
 }
@@ -267,21 +367,24 @@ fn EmbeddedInviteCode(invite_code: Option<DecodedInviteCode>) -> impl IntoView {
     }
 }
 
-fn decode_input(input: &str) -> Result<DecodeResult, String> {
+fn decode_input(input: &str) -> Result<DecodeResult, DecodeError> {
     match decode_invite_code(input) {
         Ok(invite_code) => return Ok(DecodeResult::InviteCode(invite_code)),
         Err(invite_error) => match decode_oob_token(input) {
             Ok(oob_token) => Ok(DecodeResult::OobToken(oob_token)),
-            Err(oob_error) => Err(format!(
-                "Could not decode input as a Fedimint join code or OOB token. Join code error: {invite_error}. OOB token error: {oob_error}"
-            )),
+            Err(oob_error) => Err(DecodeError {
+                summary: "Could not decode input as a Fedimint invite code or OOB token."
+                    .to_owned(),
+                invite_code_error: Some(invite_error),
+                oob_token_error: Some(oob_error),
+            }),
         },
     }
 }
 
 fn decode_invite_code(input: &str) -> Result<DecodedInviteCode, String> {
     let invite_code = InviteCode::from_str(input)
-        .map_err(|error| format!("Could not decode join code: {error}"))?;
+        .map_err(|error| format!("Could not decode invite code: {error}"))?;
 
     decoded_invite_code(invite_code)
 }
@@ -338,6 +441,8 @@ fn decode_oob_token(input: &str) -> Result<DecodedOobToken, String> {
     Ok(DecodedOobToken {
         total_amount: total_amount.to_string(),
         total_amount_msats: total_amount.msats,
+        total_amount_sats: format_msats_as_sats(total_amount.msats),
+        total_amount_btc: format_msats_as_btc(total_amount.msats),
         federation_id_prefix: oob_notes.federation_id_prefix().to_string(),
         note_count: oob_notes.notes().count_items(),
         tier_count: oob_notes.notes().count_tiers(),
@@ -345,4 +450,30 @@ fn decode_oob_token(input: &str) -> Result<DecodedOobToken, String> {
         invite_code,
         denominations,
     })
+}
+
+fn format_msats_as_sats(msats: u64) -> String {
+    let whole_sats = msats / 1_000;
+    let fractional_msats = msats % 1_000;
+
+    if fractional_msats == 0 {
+        whole_sats.to_string()
+    } else {
+        let fractional = format!("{fractional_msats:03}");
+        format!("{whole_sats}.{}", fractional.trim_end_matches('0'))
+    }
+}
+
+fn format_msats_as_btc(msats: u64) -> String {
+    const MSATS_PER_BTC: u64 = 100_000_000_000;
+
+    let whole_btc = msats / MSATS_PER_BTC;
+    let fractional_msats = msats % MSATS_PER_BTC;
+
+    if fractional_msats == 0 {
+        whole_btc.to_string()
+    } else {
+        let fractional = format!("{fractional_msats:011}");
+        format!("{whole_btc}.{}", fractional.trim_end_matches('0'))
+    }
 }

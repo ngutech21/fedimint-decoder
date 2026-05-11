@@ -56,6 +56,7 @@
         nativeBuildInputs = [
           rustToolchain
           pkgs.trunk
+          pkgs.just
           pkgs.wasm-bindgen-cli
           pkgs.binaryen
           llvm.clang-unwrapped
