@@ -35,6 +35,20 @@
         llvm = pkgs.llvmPackages_20 or pkgs.llvmPackages;
         clangResourceIncludes = "${llvm.clang-unwrapped.lib}/lib/clang/${lib.versions.major llvm.clang-unwrapped.version}/include";
         fenixPkgs = fenix.packages.${system};
+        wasmBindgenVersion = "0.2.121";
+        wasmBindgenCli = pkgs.rustPlatform.buildRustPackage {
+          pname = "wasm-bindgen-cli";
+          version = wasmBindgenVersion;
+
+          src = pkgs.fetchCrate {
+            pname = "wasm-bindgen-cli";
+            version = wasmBindgenVersion;
+            hash = "sha256-ZOMgFNOcGkO66Jz/Z83eoIu+DIzo3Z/vq6Z5g6BDY/w=";
+          };
+
+          cargoHash = "sha256-DPdCDPTAPBrbqLUqnCwQu1dePs9lGg85JCJOCIr9qjU=";
+          doCheck = false;
+        };
         rustToolchain = fenixPkgs.combine [
           fenixPkgs.stable.toolchain
           fenixPkgs.targets.wasm32-unknown-unknown.stable.rust-std
@@ -57,7 +71,7 @@
           rustToolchain
           pkgs.trunk
           pkgs.just
-          pkgs.wasm-bindgen-cli
+          wasmBindgenCli
           pkgs.binaryen
           llvm.clang-unwrapped
           llvm.libclang
