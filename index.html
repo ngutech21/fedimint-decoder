@@ -121,17 +121,34 @@
       .actions {
         display: flex;
         justify-content: flex-end;
+        gap: 10px;
+      }
+
+      .clear-button,
+      .decode-button {
+        min-height: 44px;
+        border-radius: 8px;
+        padding: 0 20px;
+        font-weight: 800;
+        cursor: pointer;
+      }
+
+      .clear-button {
+        border: 1px solid var(--line);
+        background: transparent;
+        color: var(--text);
+      }
+
+      .clear-button:hover,
+      .clear-button:focus-visible {
+        border-color: var(--line-strong);
+        background: var(--surface);
       }
 
       .decode-button {
-        min-height: 44px;
         border: 0;
-        border-radius: 8px;
-        padding: 0 20px;
         background: var(--accent);
         color: var(--accent-text);
-        font-weight: 800;
-        cursor: pointer;
       }
 
       .decode-button:hover {
@@ -351,6 +368,10 @@
         }
 
         .decode-button {
+          width: 100%;
+        }
+
+        .clear-button {
           width: 100%;
         }
 

@@ -41,10 +41,8 @@ struct DecodedOobToken {
 #[derive(Clone)]
 struct DecodedDenomination {
     amount: String,
-    amount_msats: u64,
     count: usize,
     subtotal: String,
-    subtotal_msats: u64,
 }
 
 #[derive(Clone)]
@@ -65,6 +63,11 @@ struct DecodeError {
 fn App() -> impl IntoView {
     let (input, set_input) = signal(String::new());
     let (result, set_result) = signal(None::<DecodeResult>);
+
+    let clear = move |_| {
+        set_input.set(String::new());
+        set_result.set(None);
+    };
 
     let decode = move |_| {
         let trimmed = input.get().trim().to_owned();
@@ -110,6 +113,9 @@ fn App() -> impl IntoView {
                 ></textarea>
 
                 <div class="actions">
+                    <button class="clear-button" type="button" on:click=clear>
+                        "Clear"
+                    </button>
                     <button class="decode-button" type="button" on:click=decode>
                         "Decode"
                     </button>
@@ -270,13 +276,13 @@ fn OobTokenResult(oob_token: DecodedOobToken) -> impl IntoView {
                 </div>
                 <For
                     each=move || denominations.clone()
-                    key=|denomination| denomination.amount_msats
+                    key=|denomination| denomination.amount.clone()
                     children=move |denomination| {
                         view! {
                             <div class="denomination-row">
-                                <code>{denomination.amount} " (" {denomination.amount_msats} " msat)"</code>
+                                <code>{denomination.amount}</code>
                                 <strong>{denomination.count}</strong>
-                                <code>{denomination.subtotal} " (" {denomination.subtotal_msats} " msat)"</code>
+                                <code>{denomination.subtotal}</code>
                             </div>
                         }
                     }
@@ -423,10 +429,8 @@ fn decode_oob_token(input: &str) -> Result<DecodedOobToken, String> {
 
             DecodedDenomination {
                 amount: amount.to_string(),
-                amount_msats: amount.msats,
                 count,
                 subtotal: subtotal.to_string(),
-                subtotal_msats: subtotal.msats,
             }
         })
         .collect::<Vec<_>>();
