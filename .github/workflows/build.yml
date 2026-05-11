@@ -6,6 +6,9 @@ on:
     branches:
       - master
 
+permissions:
+  contents: read
+
 jobs:
   nix-build:
     name: Nix flake build
@@ -15,11 +18,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install Nix
-        uses: cachix/install-nix-action@v31
+      - name: Setup Nix
+        uses: ./.github/actions/setup-nix
         with:
-          extra_nix_config: |
-            accept-flake-config = true
+          enable-magic-nix-cache: 'false'
+          enable-fedimint-cache: 'false'
+          print-config: 'true'
 
       - name: Build app
-        run: nix build .#
+        env:
+          env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NIX_CONFIG: |
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+        run: nix build --accept-flake-config .#
