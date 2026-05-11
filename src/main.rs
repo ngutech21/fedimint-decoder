@@ -27,7 +27,6 @@ struct DecodedPeer {
 #[derive(Clone)]
 struct DecodedOobToken {
     total_amount: String,
-    total_amount_msats: u64,
     total_amount_sats: String,
     total_amount_btc: String,
     federation_id_prefix: String,
@@ -158,7 +157,7 @@ fn InviteCodeResult(invite_code: DecodedInviteCode) -> impl IntoView {
     };
 
     view! {
-        <div class="summary-grid">
+        <div class="summary-grid invite-summary">
             <div class="summary-item">
                 <span class="summary-label">"Type"</span>
                 <strong>"Federation invite code"</strong>
@@ -239,10 +238,6 @@ fn OobTokenResult(oob_token: DecodedOobToken) -> impl IntoView {
             <div class="summary-item">
                 <span class="summary-label">"Total amount"</span>
                 <strong>{oob_token.total_amount.clone()}</strong>
-            </div>
-            <div class="summary-item">
-                <span class="summary-label">"Total msats"</span>
-                <strong class="mono">{oob_token.total_amount_msats}</strong>
             </div>
             <div class="summary-item">
                 <span class="summary-label">"Total sats"</span>
@@ -444,7 +439,6 @@ fn decode_oob_token(input: &str) -> Result<DecodedOobToken, String> {
 
     Ok(DecodedOobToken {
         total_amount: total_amount.to_string(),
-        total_amount_msats: total_amount.msats,
         total_amount_sats: format_msats_as_sats(total_amount.msats),
         total_amount_btc: format_msats_as_btc(total_amount.msats),
         federation_id_prefix: oob_notes.federation_id_prefix().to_string(),
