@@ -1,4 +1,5 @@
 use fedimint_core::invite_code::InviteCode;
+use fedimint_mint_client::OOBNotes;
 use leptos::prelude::*;
 use std::str::FromStr;
 
@@ -24,8 +25,30 @@ struct DecodedPeer {
 }
 
 #[derive(Clone)]
+struct DecodedOobToken {
+    total_amount: String,
+    total_amount_msats: u64,
+    federation_id_prefix: String,
+    note_count: usize,
+    tier_count: usize,
+    normalized_token: String,
+    invite_code: Option<DecodedInviteCode>,
+    denominations: Vec<DecodedDenomination>,
+}
+
+#[derive(Clone)]
+struct DecodedDenomination {
+    amount: String,
+    amount_msats: u64,
+    count: usize,
+    subtotal: String,
+    subtotal_msats: u64,
+}
+
+#[derive(Clone)]
 enum DecodeResult {
     InviteCode(DecodedInviteCode),
+    OobToken(DecodedOobToken),
     Error(String),
 }
 
@@ -44,8 +67,8 @@ fn App() -> impl IntoView {
             return;
         }
 
-        set_result.set(Some(match decode_invite_code(&trimmed) {
-            Ok(invite_code) => DecodeResult::InviteCode(invite_code),
+        set_result.set(Some(match decode_input(&trimmed) {
+            Ok(result) => result,
             Err(error) => DecodeResult::Error(error),
         }));
     };
@@ -91,6 +114,9 @@ fn App() -> impl IntoView {
                                     match result {
                                         DecodeResult::InviteCode(invite_code) => {
                                             view! { <InviteCodeResult invite_code=invite_code /> }.into_any()
+                                        }
+                                        DecodeResult::OobToken(oob_token) => {
+                                            view! { <OobTokenResult oob_token=oob_token /> }.into_any()
                                         }
                                         DecodeResult::Error(message) => {
                                             view! { <p class="error-message">{message}</p> }.into_any()
@@ -162,10 +188,105 @@ fn InviteCodeResult(invite_code: DecodedInviteCode) -> impl IntoView {
     }
 }
 
-fn decode_invite_code(input: &str) -> Result<DecodedInviteCode, String> {
-    let invite_code =
-        InviteCode::from_str(input).map_err(|error| format!("Could not decode join code: {error}"))?;
+#[component]
+fn OobTokenResult(oob_token: DecodedOobToken) -> impl IntoView {
+    let denominations = oob_token.denominations.clone();
 
+    view! {
+        <div class="summary-grid">
+            <div class="summary-item">
+                <span class="summary-label">"Type"</span>
+                <strong>"OOB eCash token"</strong>
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">"Total amount"</span>
+                <strong>{oob_token.total_amount.clone()}</strong>
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">"Total msats"</span>
+                <strong>{oob_token.total_amount_msats}</strong>
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">"Federation ID prefix"</span>
+                <strong class="mono">{oob_token.federation_id_prefix.clone()}</strong>
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">"Notes"</span>
+                <strong>{oob_token.note_count}</strong>
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">"Denomination tiers"</span>
+                <strong>{oob_token.tier_count}</strong>
+            </div>
+        </div>
+
+        <div class="detail-block">
+            <h3>"Denominations"</h3>
+            <div class="denomination-list">
+                <div class="denomination-row denomination-header">
+                    <span>"Amount"</span>
+                    <span>"Count"</span>
+                    <span>"Subtotal"</span>
+                </div>
+                <For
+                    each=move || denominations.clone()
+                    key=|denomination| denomination.amount_msats
+                    children=move |denomination| {
+                        view! {
+                            <div class="denomination-row">
+                                <code>{denomination.amount} " (" {denomination.amount_msats} " msat)"</code>
+                                <strong>{denomination.count}</strong>
+                                <code>{denomination.subtotal} " (" {denomination.subtotal_msats} " msat)"</code>
+                            </div>
+                        }
+                    }
+                />
+            </div>
+        </div>
+
+        <EmbeddedInviteCode invite_code=oob_token.invite_code.clone() />
+
+        <div class="detail-block">
+            <h3>"Normalized token"</h3>
+            <code class="raw-code">{oob_token.normalized_token}</code>
+        </div>
+    }
+}
+
+#[component]
+fn EmbeddedInviteCode(invite_code: Option<DecodedInviteCode>) -> impl IntoView {
+    match invite_code {
+        Some(invite_code) => view! {
+            <div class="detail-block">
+                <h3>"Embedded federation invite"</h3>
+                <InviteCodeResult invite_code=invite_code />
+            </div>
+        }
+        .into_any(),
+        None => view! {}.into_any(),
+    }
+}
+
+fn decode_input(input: &str) -> Result<DecodeResult, String> {
+    match decode_invite_code(input) {
+        Ok(invite_code) => return Ok(DecodeResult::InviteCode(invite_code)),
+        Err(invite_error) => match decode_oob_token(input) {
+            Ok(oob_token) => Ok(DecodeResult::OobToken(oob_token)),
+            Err(oob_error) => Err(format!(
+                "Could not decode input as a Fedimint join code or OOB token. Join code error: {invite_error}. OOB token error: {oob_error}"
+            )),
+        },
+    }
+}
+
+fn decode_invite_code(input: &str) -> Result<DecodedInviteCode, String> {
+    let invite_code = InviteCode::from_str(input)
+        .map_err(|error| format!("Could not decode join code: {error}"))?;
+
+    decoded_invite_code(invite_code)
+}
+
+fn decoded_invite_code(invite_code: InviteCode) -> Result<DecodedInviteCode, String> {
     let peers = invite_code
         .peers()
         .into_iter()
@@ -186,3 +307,42 @@ fn decode_invite_code(input: &str) -> Result<DecodedInviteCode, String> {
     })
 }
 
+fn decode_oob_token(input: &str) -> Result<DecodedOobToken, String> {
+    let oob_notes = OOBNotes::from_str(input)
+        .map_err(|error| format!("Could not decode OOB token: {error}"))?;
+
+    let denominations = oob_notes
+        .notes()
+        .summary()
+        .iter()
+        .map(|(amount, count)| {
+            let subtotal = amount * (count as u64);
+
+            DecodedDenomination {
+                amount: amount.to_string(),
+                amount_msats: amount.msats,
+                count,
+                subtotal: subtotal.to_string(),
+                subtotal_msats: subtotal.msats,
+            }
+        })
+        .collect::<Vec<_>>();
+
+    let invite_code = oob_notes
+        .federation_invite()
+        .map(decoded_invite_code)
+        .transpose()?;
+
+    let total_amount = oob_notes.total_amount();
+
+    Ok(DecodedOobToken {
+        total_amount: total_amount.to_string(),
+        total_amount_msats: total_amount.msats,
+        federation_id_prefix: oob_notes.federation_id_prefix().to_string(),
+        note_count: oob_notes.notes().count_items(),
+        tier_count: oob_notes.notes().count_tiers(),
+        normalized_token: oob_notes.to_string(),
+        invite_code,
+        denominations,
+    })
+}

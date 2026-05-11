@@ -199,6 +199,33 @@
         overflow: hidden;
       }
 
+      .denomination-list {
+        display: grid;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        overflow: hidden;
+      }
+
+      .denomination-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1.3fr) minmax(72px, 0.4fr) minmax(0, 1.3fr);
+        gap: 12px;
+        align-items: center;
+        padding: 12px;
+        background: oklch(98% 0.004 170);
+      }
+
+      .denomination-row + .denomination-row {
+        border-top: 1px solid var(--line);
+      }
+
+      .denomination-header {
+        color: var(--muted);
+        font-size: 0.78rem;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+
       .peer-row {
         display: grid;
         grid-template-columns: minmax(80px, 120px) minmax(0, 1fr);
@@ -244,6 +271,7 @@
         }
 
         .summary-grid,
+        .denomination-row,
         .peer-row {
           grid-template-columns: 1fr;
         }
