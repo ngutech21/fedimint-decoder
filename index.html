@@ -132,17 +132,96 @@
 
       .result-panel {
         display: grid;
-        gap: 8px;
+        gap: 18px;
         border-top: 1px solid var(--line);
         padding-top: 18px;
       }
 
-      .result-panel h2 {
+      .result-panel h2,
+      .detail-block h3 {
         font-size: 1rem;
       }
 
       .result-panel p {
         color: var(--muted);
+        line-height: 1.5;
+      }
+
+      .error-message {
+        color: oklch(45% 0.16 28);
+        font-weight: 650;
+      }
+
+      .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .summary-item {
+        display: grid;
+        gap: 5px;
+        min-width: 0;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 12px;
+        background: oklch(98% 0.004 170);
+      }
+
+      .summary-label {
+        color: var(--muted);
+        font-size: 0.78rem;
+        font-weight: 700;
+      }
+
+      .summary-item strong,
+      .peer-row code,
+      .raw-code {
+        overflow-wrap: anywhere;
+      }
+
+      .mono,
+      code {
+        font-family:
+          "SFMono-Regular", Consolas, "Liberation Mono", ui-monospace,
+          monospace;
+      }
+
+      .detail-block {
+        display: grid;
+        gap: 10px;
+      }
+
+      .peer-list {
+        display: grid;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        overflow: hidden;
+      }
+
+      .peer-row {
+        display: grid;
+        grid-template-columns: minmax(80px, 120px) minmax(0, 1fr);
+        gap: 12px;
+        padding: 12px;
+        background: oklch(98% 0.004 170);
+      }
+
+      .peer-row + .peer-row {
+        border-top: 1px solid var(--line);
+      }
+
+      .peer-row span {
+        color: var(--muted);
+        font-weight: 700;
+      }
+
+      .raw-code {
+        display: block;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 12px;
+        background: oklch(98% 0.004 170);
         line-height: 1.5;
       }
 
@@ -162,6 +241,11 @@
 
         .decode-button {
           width: 100%;
+        }
+
+        .summary-grid,
+        .peer-row {
+          grid-template-columns: 1fr;
         }
       }
     </style>
