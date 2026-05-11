@@ -1,0 +1,3 @@
+final-check:
+   cargo build
+   
