@@ -1,5 +1,8 @@
 [watch]
-ignore = [
-  ".playwright-mcp",
-  "result",
+watch = [
+  "Cargo.lock",
+  "Cargo.toml",
+  "Trunk.toml",
+  "index.html",
+  "src",
 ]
