@@ -3,12 +3,8 @@
 Client-side web app for decoding Fedimint invite codes and OOB ecash notes.
 Decoding runs locally in the browser and does not require a backend.
 
-## Goals
+https://ngutech21.github.io/fedimint-decoder/
 
-- Decode Fedimint invite codes with Fedimint's canonical Rust types.
-- Decode OOB ecash notes and show offline-safe structure and amounts.
-- Compile the app to WebAssembly.
-- Keep normal operation serverless and local-only.
 
 ## Development
 
