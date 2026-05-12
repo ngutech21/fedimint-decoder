@@ -31,6 +31,10 @@ jobs:
           enable-fedimint-cache: 'false'
           print-config: 'true'
 
+      - name: Configure GitHub Pages
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        uses: actions/configure-pages@v6
+
       - name: Build app
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -40,7 +44,7 @@ jobs:
 
       - name: Upload GitHub Pages artifact
         if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: result
 
@@ -57,4 +61,4 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
