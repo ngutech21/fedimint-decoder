@@ -50,6 +50,10 @@
         font: inherit;
       }
 
+      a {
+        color: inherit;
+      }
+
       button:focus-visible,
       summary:focus-visible {
         outline: none;
@@ -298,6 +302,7 @@
       }
 
       .summary-item strong,
+      .federation-value,
       .error-detail code,
       .raw-code {
         overflow-wrap: anywhere;
@@ -317,6 +322,91 @@
 
       .detail-block > .detail-block {
         margin-top: var(--space-md);
+      }
+
+      .federation-summary {
+        grid-column: 1 / -1;
+        align-items: start;
+      }
+
+      .federation-value {
+        display: grid;
+        gap: var(--space-xs);
+        min-width: 0;
+      }
+
+      .subtle-note {
+        color: var(--muted);
+        font-size: 0.86rem;
+        font-weight: 650;
+      }
+
+      .observer-link {
+        width: fit-content;
+        color: var(--accent-strong);
+        font-size: 0.86rem;
+        font-weight: 750;
+        text-decoration-color: oklch(46% 0.13 165 / 45%);
+        text-underline-offset: 3px;
+      }
+
+      .observer-link:hover {
+        color: var(--accent);
+        text-decoration-color: currentColor;
+      }
+
+      .inline-details {
+        display: grid;
+        gap: var(--space-sm);
+        min-width: 0;
+      }
+
+      .inline-details summary {
+        width: fit-content;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 7px 10px;
+        background: var(--surface);
+        color: var(--text);
+        font-size: 0.86rem;
+        font-weight: 750;
+        cursor: pointer;
+      }
+
+      .inline-details summary:hover {
+        border-color: var(--line-strong);
+      }
+
+      .inline-details[open] summary {
+        border-color: var(--line-strong);
+        background: var(--surface-strong);
+      }
+
+      .inline-detail-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1px;
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--line);
+      }
+
+      .inline-detail-grid > div {
+        display: grid;
+        gap: var(--space-2xs);
+        min-width: 0;
+        padding: 12px;
+        background: var(--surface);
+      }
+
+      .inline-detail-wide {
+        grid-column: 1 / -1;
+      }
+
+      .inline-details .raw-disclosure {
+        border-top: 0;
+        padding-top: 0;
       }
 
       .denomination-list {
@@ -343,6 +433,55 @@
         font-size: 0.78rem;
         font-weight: 800;
         text-transform: uppercase;
+      }
+
+      .note-inventory {
+        display: grid;
+        gap: var(--space-xs);
+        border-top: 1px solid var(--line);
+        padding-top: var(--space-md);
+      }
+
+      .note-inventory summary {
+        width: fit-content;
+        border-radius: 6px;
+        color: var(--text);
+        font-weight: 800;
+        cursor: pointer;
+      }
+
+      .note-inventory p {
+        margin-top: 8px;
+      }
+
+      .note-list {
+        display: grid;
+        margin-top: var(--space-sm);
+        border-block: 1px solid var(--line);
+      }
+
+      .note-row {
+        display: grid;
+        grid-template-columns: 44px minmax(96px, 0.8fr) minmax(72px, 0.5fr) minmax(0, 2fr);
+        gap: var(--space-sm);
+        align-items: baseline;
+        min-width: 0;
+        padding: 11px 0;
+      }
+
+      .note-row + .note-row {
+        border-top: 1px solid var(--line);
+      }
+
+      .note-header {
+        color: var(--muted);
+        font-size: 0.78rem;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+
+      .note-row code {
+        overflow-wrap: anywhere;
       }
 
       .raw-code {
@@ -465,6 +604,7 @@
 
         .summary-grid,
         .summary-item,
+        .inline-detail-grid,
         .error-detail {
           grid-template-columns: 1fr;
         }
@@ -474,7 +614,17 @@
           gap: 8px;
         }
 
+        .note-row {
+          grid-template-columns: 28px minmax(88px, 0.7fr) minmax(48px, 0.4fr) minmax(0, 1.6fr);
+          gap: 6px;
+          font-size: 0.94rem;
+        }
+
         .denomination-header {
+          font-size: 0.72rem;
+        }
+
+        .note-header {
           font-size: 0.72rem;
         }
 

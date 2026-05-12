@@ -35,6 +35,7 @@ struct DecodedOobToken {
     normalized_token: String,
     invite_code: Option<DecodedInviteCode>,
     denominations: Vec<DecodedDenomination>,
+    notes: Vec<DecodedNote>,
 }
 
 #[derive(Clone)]
@@ -42,6 +43,14 @@ struct DecodedDenomination {
     amount: String,
     count: usize,
     subtotal: String,
+}
+
+#[derive(Clone)]
+struct DecodedNote {
+    index: usize,
+    amount: String,
+    amount_sats: String,
+    nonce: String,
 }
 
 #[derive(Clone)]
@@ -103,7 +112,7 @@ fn App() -> impl IntoView {
                 </div>
 
                 <div class="input-panel">
-                    
+
                     <textarea
                         id="decoder-input"
                         class="decoder-input"
@@ -215,6 +224,9 @@ fn InviteCodeResult(invite_code: DecodedInviteCode) -> impl IntoView {
 #[component]
 fn OobTokenResult(oob_token: DecodedOobToken) -> impl IntoView {
     let denominations = oob_token.denominations.clone();
+    let notes = oob_token.notes.clone();
+    let note_count = oob_token.note_count;
+    let invite_code = oob_token.invite_code.clone();
 
     view! {
         <div class="summary-grid">
@@ -235,10 +247,6 @@ fn OobTokenResult(oob_token: DecodedOobToken) -> impl IntoView {
                 <strong class="mono">{oob_token.total_amount_btc.clone()}</strong>
             </div>
             <div class="summary-item">
-                <span class="summary-label">"Federation ID prefix"</span>
-                <strong class="mono">{oob_token.federation_id_prefix.clone()}</strong>
-            </div>
-            <div class="summary-item">
                 <span class="summary-label">"Notes"</span>
                 <strong>{oob_token.note_count}</strong>
             </div>
@@ -246,6 +254,10 @@ fn OobTokenResult(oob_token: DecodedOobToken) -> impl IntoView {
                 <span class="summary-label">"Denomination tiers"</span>
                 <strong>{oob_token.tier_count}</strong>
             </div>
+            <FederationSummary
+                federation_id_prefix=oob_token.federation_id_prefix.clone()
+                invite_code=invite_code
+            />
         </div>
 
         <div class="detail-block">
@@ -272,13 +284,125 @@ fn OobTokenResult(oob_token: DecodedOobToken) -> impl IntoView {
             </div>
         </div>
 
-        <EmbeddedInviteCode invite_code=oob_token.invite_code.clone() />
+        <NoteInventory notes=notes note_count=note_count />
 
         <RawDisclosure
             title="Raw normalized token"
             note="This token may contain spendable ecash data. Reveal it only when you intentionally need the raw representation."
             value=oob_token.normalized_token
         />
+    }
+}
+
+#[component]
+fn NoteInventory(notes: Vec<DecodedNote>, note_count: usize) -> impl IntoView {
+    view! {
+        <details class="note-inventory">
+            <summary>"Show individual notes (" {note_count} ")"</summary>
+            <p>"Shows denomination and public note nonce only. Spend keys and raw spendable note data are not shown here."</p>
+            <div class="note-list">
+                <div class="note-row note-header">
+                    <span>"#"</span>
+                    <span>"Amount"</span>
+                    <span>"Sats"</span>
+                    <span>"Public nonce"</span>
+                </div>
+                <For
+                    each=move || notes.clone()
+                    key=|note| note.index
+                    children=move |note| {
+                        view! {
+                            <div class="note-row">
+                                <strong>{note.index}</strong>
+                                <code>{note.amount}</code>
+                                <code>{note.amount_sats}</code>
+                                <code>{note.nonce}</code>
+                            </div>
+                        }
+                    }
+                />
+            </div>
+        </details>
+    }
+}
+
+#[component]
+fn FederationSummary(
+    federation_id_prefix: String,
+    invite_code: Option<DecodedInviteCode>,
+) -> impl IntoView {
+    match invite_code {
+        Some(invite_code) => {
+            let peers = invite_code.peers.clone();
+            let federation_id = invite_code.federation_id.clone();
+            let observer_url = format!("https://observer.fedimint.org/federations/{federation_id}");
+            let primary_peer_id = invite_code.primary_peer_id.clone();
+            let primary_api_url = invite_code.primary_api_url.clone();
+            let guardian_count = invite_code.guardian_count;
+            let has_api_secret = invite_code.has_api_secret;
+            let normalized_code = invite_code.normalized_code.clone();
+
+            view! {
+                <div class="summary-item federation-summary">
+                    <span class="summary-label">"Federation"</span>
+                    <div class="federation-value">
+                        <strong class="mono">{federation_id}</strong>
+                        <a class="observer-link" href=observer_url target="_blank" rel="noreferrer">
+                            "Open in Fedimint Observer"
+                        </a>
+                        <details class="inline-details">
+                            <summary>"Show federation details"</summary>
+                            <div class="inline-detail-grid">
+                                <div>
+                                    <span class="summary-label">"Primary peer"</span>
+                                    <strong>{primary_peer_id}</strong>
+                                </div>
+                                <div>
+                                    <span class="summary-label">"Primary API URL"</span>
+                                    <strong class="mono">{primary_api_url}</strong>
+                                </div>
+                                <div>
+                                    <span class="summary-label">"Guardian APIs"</span>
+                                    <strong>{guardian_count}</strong>
+                                </div>
+                                <div>
+                                    <span class="summary-label">"API secret"</span>
+                                    <strong>{if has_api_secret { "Present" } else { "Not included" }}</strong>
+                                </div>
+                                <For
+                                    each=move || peers.clone()
+                                    key=|peer| peer.peer_id.clone()
+                                    children=move |peer| {
+                                        view! {
+                                            <div class="inline-detail-wide">
+                                                <span class="summary-label">"Peer " {peer.peer_id} " endpoint"</span>
+                                                <strong class="mono">{peer.api_url}</strong>
+                                            </div>
+                                        }
+                                    }
+                                />
+                            </div>
+                            <RawDisclosure
+                                title="Normalized invite code"
+                                note="This embedded invite code may include federation connection details. Reveal it only when you intentionally need the raw representation."
+                                value=normalized_code
+                            />
+                        </details>
+                    </div>
+                </div>
+            }
+            .into_any()
+        }
+        None => view! {
+            <div class="summary-item">
+                <span class="summary-label">"Federation"</span>
+                <div class="federation-value">
+                    <strong class="mono">{federation_id_prefix}</strong>
+                    <span class="subtle-note">"ID prefix only, no embedded invite"</span>
+                </div>
+            </div>
+        }
+        .into_any(),
     }
 }
 
@@ -338,20 +462,6 @@ fn DecodeErrorResult(error: DecodeError) -> impl IntoView {
             <p class="error-message">{summary}</p>
             {parser_details}
         </div>
-    }
-}
-
-#[component]
-fn EmbeddedInviteCode(invite_code: Option<DecodedInviteCode>) -> impl IntoView {
-    match invite_code {
-        Some(invite_code) => view! {
-            <div class="detail-block">
-                <h3>"Embedded federation invite"</h3>
-                <InviteCodeResult invite_code=invite_code />
-            </div>
-        }
-        .into_any(),
-        None => view! {}.into_any(),
     }
 }
 
@@ -417,6 +527,18 @@ fn decode_oob_token(input: &str) -> Result<DecodedOobToken, String> {
         })
         .collect::<Vec<_>>();
 
+    let notes = oob_notes
+        .notes()
+        .iter_items()
+        .enumerate()
+        .map(|(index, (amount, note))| DecodedNote {
+            index: index + 1,
+            amount: amount.to_string(),
+            amount_sats: format_msats_as_sats(amount.msats),
+            nonce: note.nonce().to_string(),
+        })
+        .collect::<Vec<_>>();
+
     let invite_code = oob_notes
         .federation_invite()
         .map(decoded_invite_code)
@@ -434,6 +556,7 @@ fn decode_oob_token(input: &str) -> Result<DecodedOobToken, String> {
         normalized_token: oob_notes.to_string(),
         invite_code,
         denominations,
+        notes,
     })
 }
 
