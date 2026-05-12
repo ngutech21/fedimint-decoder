@@ -8,7 +8,7 @@ fn main() {
 }
 
 #[derive(Clone)]
-struct DecodedInviteCode { 
+struct DecodedInviteCode {
     federation_id: String,
     primary_peer_id: String,
     primary_api_url: String,
@@ -90,39 +90,47 @@ fn App() -> impl IntoView {
         <main class="app-shell">
             <section class="decoder-panel" aria-labelledby="decoder-title">
                 <div class="intro">
-                    <p class="eyebrow">"Fedimint Decoder"</p>
-                    <h1 id="decoder-title">"Inspect invite codes and tokens"</h1>
-                    <p class="lede">
-                        "Paste a Fedimint invite code or OOB token. Decoding will run fully locally in your browser."
-                    </p>
+                    <div class="intro-meta">
+                        <p class="eyebrow">"Fedimint Decoder"</p>
+                        <span class="privacy-badge">"Local only"</span>
+                    </div>
+                    <div class="intro-copy">
+                        <h1 id="decoder-title">"Inspect invite codes and tokens"</h1>
+                        <p class="lede">
+                            "Paste a Fedimint invite code or OOB token. Decoding runs in your browser and does not contact a federation."
+                        </p>
+                    </div>
                 </div>
 
-                <label class="input-label" for="decoder-input">
-                    "Input"
-                </label>
-                <textarea
-                    id="decoder-input"
-                    class="decoder-input"
-                    rows="10"
-                    placeholder="Paste fed1... or an OOB token"
-                    prop:value=input
-                    on:input=move |event| {
-                        set_input.set(event_target_value(&event));
-                    }
-                ></textarea>
+                <div class="input-panel">
+                    
+                    <textarea
+                        id="decoder-input"
+                        class="decoder-input"
+                        rows="10"
+                        placeholder="Paste fed1... or an OOB token"
+                        prop:value=input
+                        on:input=move |event| {
+                            set_input.set(event_target_value(&event));
+                        }
+                    ></textarea>
 
-                <div class="actions">
-                    <button class="clear-button" type="button" on:click=clear>
-                        "Clear"
-                    </button>
-                    <button class="decode-button" type="button" on:click=decode>
-                        "Decode"
-                    </button>
+                    <div class="actions">
+                        <button class="clear-button" type="button" on:click=clear>
+                            "Clear"
+                        </button>
+                        <button class="decode-button" type="button" on:click=decode>
+                            "Decode"
+                        </button>
+                    </div>
                 </div>
 
                 <Show when=move || result.get().is_some()>
                     <section class="result-panel" aria-live="polite">
-                        <h2>"Result"</h2>
+                        <div class="section-heading result-heading">
+                            <h2>"Result"</h2>
+                            <span>"Offline structure only"</span>
+                        </div>
                         {move || {
                             result
                                 .get()
@@ -182,24 +190,18 @@ fn InviteCodeResult(invite_code: DecodedInviteCode) -> impl IntoView {
                 <span class="summary-label">"API secret"</span>
                 <strong>{if invite_code.has_api_secret { "Present" } else { "Not included" }}</strong>
             </div>
-        </div>
-
-        <div class="detail-block">
-            <h3>"Guardian endpoints"</h3>
-            <div class="peer-list">
-                <For
-                    each=move || peers.clone()
-                    key=|peer| peer.peer_id.clone()
-                    children=move |peer| {
-                        view! {
-                            <div class="peer-row">
-                                <span>"Peer " {peer.peer_id}</span>
-                                <code>{peer.api_url}</code>
-                            </div>
-                        }
+            <For
+                each=move || peers.clone()
+                key=|peer| peer.peer_id.clone()
+                children=move |peer| {
+                    view! {
+                        <div class="summary-item">
+                            <span class="summary-label">"Peer " {peer.peer_id} " endpoint"</span>
+                            <strong class="mono">{peer.api_url}</strong>
+                        </div>
                     }
-                />
-            </div>
+                }
+            />
         </div>
 
         <RawDisclosure
@@ -215,21 +217,6 @@ fn OobTokenResult(oob_token: DecodedOobToken) -> impl IntoView {
     let denominations = oob_token.denominations.clone();
 
     view! {
-        <div class="status-list" aria-label="Offline decoding status">
-            <div class="status-item">
-                <span class="summary-label">"Format"</span>
-                <strong>"Decoded locally"</strong>
-            </div>
-            <div class="status-item">
-                <span class="summary-label">"Spent status"</span>
-                <strong>"Unknown"</strong>
-            </div>
-            <div class="status-item">
-                <span class="summary-label">"Federation acceptance"</span>
-                <strong>"Not checked"</strong>
-            </div>
-        </div>
-
         <div class="summary-grid">
             <div class="summary-item">
                 <span class="summary-label">"Type"</span>
