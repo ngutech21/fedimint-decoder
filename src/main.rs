@@ -8,7 +8,7 @@ fn main() {
 }
 
 #[derive(Clone)]
-struct DecodedInviteCode {
+struct DecodedInviteCode { 
     federation_id: String,
     primary_peer_id: String,
     primary_api_url: String,
