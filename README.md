@@ -1,4 +1,4 @@
-# Fedimint Decoder [![Build](https://github.com/ngutech21/fedimint-decoder/actions/workflows/build.yml/badge.svg)](https://github.com/ngutech21/fedimint-decoder/actions/workflows/build.yml)
+# Fedimint Decoder [![Build](https://github.com/ngutech21/fedimint-decoder/actions/workflows/deploy.yml/badge.svg)](https://github.com/ngutech21/fedimint-decoder/actions/workflows/deploy.yml)
 
 Client-side web app for decoding Fedimint invite codes and OOB ecash notes.
 Decoding runs locally in the browser and does not require a backend.

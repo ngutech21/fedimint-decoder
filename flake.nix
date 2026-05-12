@@ -112,7 +112,7 @@
               runHook preBuild
               export HOME="$TMPDIR"
               export PATH="${llvm.bintools}/bin:$PATH"
-              trunk build --release
+              trunk build --release --public-url .
               runHook postBuild
             '';
 
